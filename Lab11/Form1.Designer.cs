@@ -28,13 +28,11 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea8 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend8 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series8 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea5 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend5 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series5 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.lblMainTitle = new System.Windows.Forms.Label();
             this.tabSetup = new System.Windows.Forms.TabControl();
-            this.lblPort = new System.Windows.Forms.Label();
-            this.cboPort = new System.Windows.Forms.ComboBox();
             this.tabWave = new System.Windows.Forms.TabPage();
             this.lblDCOffset = new System.Windows.Forms.Label();
             this.lblDutyCycle = new System.Windows.Forms.Label();
@@ -59,6 +57,8 @@
             this.opt100Hz = new System.Windows.Forms.RadioButton();
             this.opt10Hz = new System.Windows.Forms.RadioButton();
             this.opt1Hz = new System.Windows.Forms.RadioButton();
+            this.lblPort = new System.Windows.Forms.Label();
+            this.cboPort = new System.Windows.Forms.ComboBox();
             this.cmdOnOff = new System.Windows.Forms.Button();
             this.cmdQuit = new System.Windows.Forms.Button();
             this.chtData = new System.Windows.Forms.DataVisualization.Charting.Chart();
@@ -93,24 +93,6 @@
             this.tabSetup.SelectedIndex = 0;
             this.tabSetup.Size = new System.Drawing.Size(246, 326);
             this.tabSetup.TabIndex = 1;
-            // 
-            // lblPort
-            // 
-            this.lblPort.AutoSize = true;
-            this.lblPort.Location = new System.Drawing.Point(4, 8);
-            this.lblPort.Name = "lblPort";
-            this.lblPort.Size = new System.Drawing.Size(68, 13);
-            this.lblPort.TabIndex = 1;
-            this.lblPort.Text = "Device/Port:";
-            // 
-            // cboPort
-            // 
-            this.cboPort.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboPort.FormattingEnabled = true;
-            this.cboPort.Location = new System.Drawing.Point(73, 4);
-            this.cboPort.Name = "cboPort";
-            this.cboPort.Size = new System.Drawing.Size(98, 21);
-            this.cboPort.TabIndex = 0;
             // 
             // tabWave
             // 
@@ -172,6 +154,7 @@
             this.updDCOffset.Name = "updDCOffset";
             this.updDCOffset.Size = new System.Drawing.Size(88, 20);
             this.updDCOffset.TabIndex = 1;
+            this.updDCOffset.ValueChanged += new System.EventHandler(this.updDCOffset_ValueChanged);
             // 
             // updDutyCycle
             // 
@@ -195,6 +178,7 @@
             0,
             0,
             0});
+            this.updDutyCycle.ValueChanged += new System.EventHandler(this.updDutyCycle_ValueChanged);
             // 
             // updAmplitude
             // 
@@ -212,6 +196,7 @@
             0,
             0,
             131072});
+            this.updAmplitude.ValueChanged += new System.EventHandler(this.updAmplitude_ValueChanged);
             // 
             // grpWaveType
             // 
@@ -427,6 +412,25 @@
             this.opt1Hz.UseVisualStyleBackColor = true;
             this.opt1Hz.CheckedChanged += new System.EventHandler(this.FreqRange_CheckedChanged);
             // 
+            // lblPort
+            // 
+            this.lblPort.AutoSize = true;
+            this.lblPort.Location = new System.Drawing.Point(4, 8);
+            this.lblPort.Name = "lblPort";
+            this.lblPort.Size = new System.Drawing.Size(68, 13);
+            this.lblPort.TabIndex = 1;
+            this.lblPort.Text = "Device/Port:";
+            // 
+            // cboPort
+            // 
+            this.cboPort.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboPort.FormattingEnabled = true;
+            this.cboPort.Location = new System.Drawing.Point(73, 4);
+            this.cboPort.Name = "cboPort";
+            this.cboPort.Size = new System.Drawing.Size(98, 21);
+            this.cboPort.TabIndex = 0;
+            this.cboPort.SelectedIndexChanged += new System.EventHandler(this.cboPort_SelectedIndexChanged);
+            // 
             // cmdOnOff
             // 
             this.cmdOnOff.BackColor = System.Drawing.Color.Red;
@@ -452,16 +456,16 @@
             // 
             // chtData
             // 
-            chartArea8.Name = "ChartArea1";
-            this.chtData.ChartAreas.Add(chartArea8);
-            legend8.Name = "Legend1";
-            this.chtData.Legends.Add(legend8);
+            chartArea5.Name = "ChartArea1";
+            this.chtData.ChartAreas.Add(chartArea5);
+            legend5.Name = "Legend1";
+            this.chtData.Legends.Add(legend5);
             this.chtData.Location = new System.Drawing.Point(274, 65);
             this.chtData.Name = "chtData";
-            series8.ChartArea = "ChartArea1";
-            series8.Legend = "Legend1";
-            series8.Name = "Series1";
-            this.chtData.Series.Add(series8);
+            series5.ChartArea = "ChartArea1";
+            series5.Legend = "Legend1";
+            series5.Name = "Series1";
+            this.chtData.Series.Add(series5);
             this.chtData.Size = new System.Drawing.Size(514, 372);
             this.chtData.TabIndex = 4;
             this.chtData.Text = "chart1";
@@ -480,6 +484,7 @@
             this.Controls.Add(this.lblMainTitle);
             this.Name = "Form1";
             this.Text = "Function Generator";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.tabSetup.ResumeLayout(false);
             this.tabWave.ResumeLayout(false);

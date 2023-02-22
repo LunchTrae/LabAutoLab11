@@ -14,13 +14,15 @@ namespace Lab11
 {
     public partial class Form1 : Form
     {
+        const int maxBufferSize = 8000;
+        const int maxD2Arate = 833000;
         double freqRange = 1;
         int arraySize;
         int sampleRate;
-        int portNum;
-        double[,] waveData;
+        double[] waveData;
         string waveType;
         bool running;
+        bool error;
         NationalInstruments.DAQmx.Task analogwritetask;
         AnalogSingleChannelWriter writer;
 
@@ -32,15 +34,27 @@ namespace Lab11
         private void UpdateArraySample()
         {
             double frequency = Convert.ToDouble(txtActFreq.Text);
-            if (frequency < 200)
+
+            sampleRate = maxD2Arate;
+            arraySize = Convert.ToInt32(sampleRate / frequency);
+
+            if(arraySize > maxBufferSize)
             {
-                sampleRate = 100000;
-                arraySize = Convert.ToInt32(sampleRate / frequency);
+                arraySize = maxBufferSize;
+                sampleRate = Convert.ToInt32(frequency * arraySize);
+                while (sampleRate > maxD2Arate)
+                {
+                    arraySize = arraySize - 1;
+                    sampleRate = Convert.ToInt32(frequency * arraySize);
+                }
             }
-            else
+            try
             {
-                sampleRate = 833000;
-                arraySize = Convert.ToInt32(sampleRate / frequency);
+                analogwritetask.Timing.ConfigureSampleClock("", sampleRate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
             }
         }
 
@@ -97,25 +111,25 @@ namespace Lab11
             chtData.Series[waveType + " Wave"].ChartType = SeriesChartType.Line;
             UpdateArraySample();
             timeish = (1.0 / (actFreq * arraySize));
-            waveData = new double[2, arraySize];
+            waveData = new double[arraySize];
             for (int i = 0; i < arraySize; i++)
             {
                 chtData.Series[waveType + " Wave"].Points.AddXY(i, CalculatePoint(i*timeish));
-                if (portNum == 0)
-                {
-                    waveData[0,i] = CalculatePoint(i*timeish);
-                }
-                else waveData[1,i] = CalculatePoint(i*timeish);
+                waveData[i] = CalculatePoint(i*timeish);
             }
-        }
 
-        private void UpdateGraph()
-        {
-            //Sample Rate Max = 800,000  CHECK SPECS ON POWERPOINT
-            //Array Size Max = 8,000
-            //1 Hz --> SR = 8000 AS = 8000
-            //10 kHz --> SR = 800,000 AS 
-            //Update Preview Plot with desired parameters (WaveType, Frequency, etc.)
+            if (running)
+            {
+                try
+                {
+                    analogwritetask.Stop();
+                    writer.WriteMultiSample(true, waveData);
+                }
+                catch(Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
         }
 
         private void WaveType_CheckedChanged(object sender, EventArgs e)
@@ -207,19 +221,29 @@ namespace Lab11
 
             running = false;
             waveType = "Sine";
-            portNum = 0;
             sampleRate = 833000;
 
-            analogwritetask = new NationalInstruments.DAQmx.Task();
-            
-
-            for (int i = 0;i < cboPort.Items.Count; i++)
+            try
             {
-                analogwritetask.AOChannels.CreateVoltageChannel(cboPort.Items[i].ToString(), "AO Channel " + i.ToString(), -10, 10, AOVoltageUnits.Volts);
+                analogwritetask = new NationalInstruments.DAQmx.Task();
+
+
+                for (int i = 0; i < cboPort.Items.Count - 1; i++)
+                {
+                    analogwritetask.AOChannels.CreateVoltageChannel(cboPort.Items[i].ToString(), "AO Channel " + i.ToString(), -10, 10, AOVoltageUnits.Volts);
+                }
+                analogwritetask.Timing.ConfigureSampleClock("", sampleRate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
+                analogwritetask.AOChannels.All.UseOnlyOnBoardMemory = true;
+                writer = new AnalogSingleChannelWriter(analogwritetask.Stream);
             }
-            analogwritetask.Timing.ConfigureSampleClock("", sampleRate, SampleClockActiveEdge.Rising, SampleQuantityMode.ContinuousSamples);
-            analogwritetask.AOChannels.All.UseOnlyOnBoardMemory = true;
-            writer = new AnalogSingleChannelWriter(analogwritetask.Stream);
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                error = true;
+                Application.Exit();
+            }
+            
+            
 
             //Chart Setup
             while (chtData.Series.Count > 0) chtData.Series.RemoveAt(0);
@@ -228,7 +252,6 @@ namespace Lab11
             chtData.ChartAreas[0].AxisY.Maximum = 11.0;
             chtData.ChartAreas[0].AxisX.Title = "Cycle Point Number";
             chtData.ChartAreas[0].AxisY.Title = "Voltage (V)";
-
             GenerateWaveform();
         }
 
@@ -247,6 +270,9 @@ namespace Lab11
                     cmdOnOff.BackColor = Color.Green;
                     cmdOnOff.Text = "ON";
                     GenerateWaveform();
+                    analogwritetask.Stop();
+                    writer.WriteMultiSample(false, waveData);
+                    analogwritetask.Start();
                 }
                 catch (Exception ex)
                 {
@@ -258,7 +284,13 @@ namespace Lab11
                 running = false;
                 cmdOnOff.BackColor = Color.Red;
                 cmdOnOff.Text = "OFF";
-                //PUT CODE TO SET VOLTAGE TO 0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                analogwritetask.Stop();
+                for (int i = 0; i < arraySize; i++)
+                {
+                    waveData[i] = 0;
+                }
+                analogwritetask.Stop();
+                writer.WriteMultiSample(true, waveData);
             }
         }
 
@@ -279,13 +311,25 @@ namespace Lab11
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            //Zero out voltages dispose of task
-            
+            if (analogwritetask != null && !error)
+            {
+                for (int i = 0; i < arraySize; i++)
+                {
+                    waveData[i] = 0;
+                }
+                if (arraySize > maxBufferSize)
+                {
+                    Array.Resize(ref waveData, maxBufferSize - 50);
+                }
+                analogwritetask.Stop();
+                writer.WriteMultiSample(true, waveData);
+                analogwritetask.Dispose();
+            }
         }
 
         private void cboPort_SelectedIndexChanged(object sender, EventArgs e)
         {
-            portNum = cboPort.SelectedIndex;
+            //
         }
     }
 }
